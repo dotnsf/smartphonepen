@@ -6,24 +6,31 @@
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css"/>
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./cvi_busy_lib.js"></script>
 <script>
 function delImage( id ){
-  $.ajax({
-    type: "DELETE",
-    url: "./del_image",
-    data: "id=" + id,
-    success: function( data ){
-      //console.log( data );
-      var json = JSON.parse( data );
-      var image_id = json.image_id;
-      if( image_id.indexOf( "error-" ) != 0 ){
-        $('#'+image_id).remove();
+  if( window.confirm( 'ID: ' + id + ' のデータを削除します' ) ){
+    var obj = getBusyOverlay( 'viewport', { color:'black', opacity:0.5, text:'削除中', style:'text-decoration:blink;font-weight:bold;font-size:12px;color:white' } );
+
+    $.ajax({
+      type: "DELETE",
+      url: "./del_image",
+      data: "id=" + id,
+      success: function( data ){
+        obj.remove();
+        //console.log( data );
+        var json = JSON.parse( data );
+        var image_id = json.image_id;
+        if( image_id.indexOf( "error-" ) != 0 ){
+          $('#'+image_id).remove();
+        }
+      },
+      error: function( jqXHR, textStatus, errorThrown ){
+        obj.remove();
+        console.log( textStatus + " : " + errorThrown );
       }
-    },
-    error: function( jqXHR, textStatus, errorThrown ){
-      console.log( textStatus + " : " + errorThrown );
-    }
-  });
+    });
+  }
 }
 </script>
 </head>
