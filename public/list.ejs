@@ -1,0 +1,16 @@
+<html>
+<body bgcolor="#ccffcc">
+<h1>Learned Image List</h1>
+<table border="1" style="background-color: #cccccc;">
+<tr style="background-color: #ffffcc;"><th>ID</th><th>Image</th><th>Letter</th></tr>
+<% for( var i = 0; i < letters.length; i ++ ){ %>
+<tr>
+ <td><%= image_ids[i] %></td>
+ <td><img src="<%= image_urls[i] %>"/></td>
+ <td><%= letters[i] %></td>
+</tr>
+<% } %>
+</table>
+</body>
+</html>
+

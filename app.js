@@ -1,0 +1,125 @@
+//. app.js
+
+var express = require( 'express' ),
+    basicAuth = require( 'basic-auth-connect' ),
+    cfenv = require( 'cfenv' ),
+    multer = require( 'multer' ),
+    bodyParser = require( 'body-parser' ),
+    fs = require( 'fs' ),
+    ejs = require( 'ejs' ),
+    cloudantlib = require( 'cloudant' ),
+    watson = require( 'watson-developer-cloud' ),
+    app = express();
+var settings = require( './settings' );
+var vr3 = watson.visual_recognition({
+  api_key: settings.vr_apikey,
+  version: 'v3',
+  version_date: '2016-05-19'
+});
+var cloudant = cloudantlib( { account: settings.cloudant_username, password: settings.cloudant_password } );
+var spendb = cloudant.db.use( settings.cloudant_db );
+var appEnv = cfenv.getAppEnv();
+
+app.use( multer( { dest: './tmp/' } ).single( 'image' ) );
+app.use( bodyParser.urlencoded( { extended: true } ) );
+app.use( bodyParser.json() );
+app.use( express.Router() );
+app.use( express.static( __dirname + '/public' ) );
+
+app.all( '/admin*', basicAuth( function( user, pass ){
+  return( user === settings.basic_username && pass === settings.basic_password );
+}));
+
+app.post( '/ocr', function( req, res ){
+  var imgpath = req.file.path;
+  var imgtype = req.file.mimetype;
+  //var imgsize = req.file.size;
+  var ext = imgtype.split( "/" )[1];
+  //var imgfilename = req.file.filename;
+  var letter = req.body.letter;
+  if( letter ){
+    var metadata1 = { "letter": letter };
+    var params1 = {
+      collection_id: settings.vr_collection_id,
+      metadata: metadata1,
+      image_file: fs.createReadStream( imgpath )
+    };
+    vr3.addImage( params1, function( err1, res1 ){
+      if( err1 ){ console.log( err1 ); }
+      else{
+        var image_id = res1.images[0].image_id;
+        var img = fs.readFileSync( imgpath );
+        var img64 = new Buffer( img ).toString( 'base64' );
+        
+        var params2 = {
+          _id: image_id,
+          _attachments: {
+            image: {
+              content_type: imgtype,
+              data: img64
+            }
+          }
+        };
+        spendb.insert( params2, image_id, function( err2, body2, header2 ){
+          if( err2 ){ console.log( err2 ); }
+          fs.unlink( imgpath, function( err ){} );
+        });
+
+        var p = JSON.stringify( res1, null, 2 );
+        res.write( p );
+        res.end();
+      }
+    });
+  }else{
+    var params1 = {
+      collection_id: settings.vr_collection_id,
+      limit: settings.vr_limit,
+      image_file: fs.createReadStream( imgpath )
+    };
+    vr3.findSimilar( params1, function( err1, res1 ){
+      if( err1 ){ console.log( err1 ); }
+      else{
+        var p = JSON.stringify( res1, null, 2 );
+        res.write( p );
+        res.end();
+      }
+
+      fs.unlink( imgpath, function( err ){} );
+    });
+  }
+});
+
+app.get( '/admin', function( req, res ){
+  var list_template = fs.readFileSync( __dirname + '/public/list.ejs', 'utf-8' );
+  var params1 = {
+    collection_id: settings.vr_collection_id
+  };
+  vr3.listImages( params1, function( err1, res1 ){
+    if( err1 ){ console.log( err1 ); }
+    else{
+      var image_ids = [];
+      var letters = [];
+      var image_urls = [];
+      var images = res1.images;
+      for( i = 0; i < images.length; i ++ ){
+        var image = images[i];
+        var image_id = image.image_id;
+        var metadata = image.metadata;
+        var letter = metadata.letter;
+        var image_url = "//" + settings.cloudant_username + ":" + settings.cloudant_password + "@" + settings.cloudant_username + ".cloudant.com/" + settings.cloudant_db + "/" + image_id + "/image";
+
+        image_ids.push( image_id );
+        letters.push( letter );
+        image_urls.push( image_url );
+      }
+
+      var p = ejs.render( list_template, { image_ids: image_ids, letters: letters, image_urls: image_urls } );
+      res.write( p );
+      res.end();
+    }
+  });
+});
+
+app.listen( appEnv.port );
+console.log( "server stating on " + appEnv.port + " ..." );
+

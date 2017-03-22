@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>SPen</title>
+<script type="text/javascript" src="//code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript">
+var isTouch = false;
+var touchData = [];
+$(function(){
+  if( window.DeviceOrientationEvent ){
+    window.addEventListener( "deviceorientation", deviceOrientation );
+  }
+
+  if( window.TouchEvent ){
+    window.addEventListener( "touchstart", touchStart );
+    window.addEventListener( "touchend", touchEnd );
+  }
+
+  var location = window.location.toString();
+  if( location.indexOf( "mybluemix.net" ) > -1 ){
+    $('#chkdiv').css( 'display', 'none' );
+  }
+});
+
+function touchStart( e ){
+  var obj = e.changedTouches[0];
+  var touchY = obj.pageY;
+
+  //. 下半分をタッチした時のみ
+  if( touchY > ( window.innerHeight / 2 ) ){
+    isTouch = true;
+    touchData = [];
+  }
+}
+
+function touchEnd( e ){
+  isTouch = false;
+
+  debugText( '' );
+  if( touchData && touchData.length > 10 ){
+    //. 描画
+    $('#result').html( '<canvas id="cv" width="200" height="200" style="display:none;"></canvas><br/><img id="resultimg"/>' );
+    var cvs = document.getElementById( "cv" );
+    var ctx = cvs.getContext( "2d" );
+    ctx.beginPath();
+
+    //. 全体を白でベタ塗り
+    ctx.fillStyle = "rgb( 255, 255, 255 )";
+    ctx.fillRect( 0, 0, 200, 200 );
+
+    //. 最初のデータ
+    var abg = touchData[0];
+    var x = abg['lr'];
+    var y = abg['fb'];
+
+    ctx.fillStyle = "rgb( 0, 255, 0 )";
+    ctx.arc( x + 100, -1 * y + 100, 5, 0, Math.PI * 2, true );
+    ctx.fill();
+
+    //. 始点をマーク
+    ctx.beginPath();
+    ctx.strokeStyle = "rgb( 0, 0, 0 )";
+    ctx.moveTo( x + 100 , -1 * y + 100 );
+
+    //. ２つ目以降のデータ
+    for( var i = 1; i < touchData.length; i ++ ){
+      var abg = touchData[i];
+      x = abg['lr'];
+      y = abg['fb'];
+      ctx.lineTo( x + 100 , -1 * y + 100 );
+    }
+    ctx.stroke();
+
+    //. 終点をマーク
+    ctx.beginPath();
+    ctx.fillStyle = "rgb( 255, 0, 0 )";
+    ctx.arc( x + 100, -1 * y + 100, 5, 0, Math.PI * 2, true );
+    ctx.fill();
+
+    //. Canvas => Image
+    var png = cvs.toDataURL( 'image/png' );
+    document.getElementById( "resultimg" ).src = png;
+
+    //. 画像データ取得
+    png = png.replace( /^.*,/, '' );
+
+    //. バイナリ変換
+    var bin = atob( png );
+    var buffer = new Uint8Array( bin.length );
+    for( var i = 0; i < bin.length; i ++ ){
+      buffer[i] = bin.charCodeAt( i );
+    }
+    var blob = new Blob( [buffer.buffer], {
+      type: 'image/png'
+    });
+
+    //. POST
+    var formdata = new FormData();
+    formdata.append( 'image', blob );
+
+    if( $('#mlchk').prop( 'checked' ) ){
+      var letter = $('#letter').val();
+      if( letter ){
+        formdata.append( 'letter', letter );
+      }
+    }
+
+    $.ajax({
+      type: "POST",
+      url: "./ocr",
+      data: formdata,
+      contentType: false,
+      processData: false,
+      success: function( data, dataType ){
+        if( letter ){
+          debugText( data );
+        }else{
+          var json = JSON.parse( data );
+          var similar_images = json.similar_images;
+
+          //. 第一候補だけを対象にする場合、
+          var similar_image = similar_images[0];
+          var metadata = similar_image.metadata;
+          var found_letter = metadata.letter;
+          var found_score = similar_image.score;
+          debugAdd( found_letter + "(" + found_score + ")" );
+        }
+      },
+      error: function( jqXHR, textStatus, errorThrown ){
+        debugAdd( textStatus + ": " + errorThrown );
+      }
+    });
+
+    touchData = [];
+  }
+}
+
+function deviceOrientation( e ){
+  if( isTouch ){
+    var gamma = e.gamma; //. Left/Right
+    var beta = e.beta;   //. Front/Back
+    var alpha = e.alpha; //. Direction
+
+    var abg = {};
+    abg['dir'] = alpha;
+    abg['fb'] = beta;
+    abg['lr'] = gamma;
+    $('#abg_lr').html( gamma );
+    $('#abg_fb').html( beta );
+    $('#abg_dir').html( alpha );
+
+    touchData.push( abg );
+  } 
+}
+
+function debugText( text ){
+  $('#debug').html( text );
+}
+
+function debugAdd( text ){
+  var msg = $('#debug').html();
+  msg += ( '<br/>' + text );
+  $('#debug').html( msg );
+}
+</script>
+<style type="text/css">
+html{
+  height: 100%;
+}
+
+body{
+  background-color: #ffffcc;
+  margin: 0;
+  height: 100%;
+}
+
+table{
+  background-color: #ccffcc;
+}
+
+#main{
+  width: 100%;
+  height: 100%;
+}
+</style>
+</head>
+<body>
+<div>
+ <div>
+  <div id="chkdiv">
+    <input type="checkbox" id="mlchk"/>学習データ<input type="text" size="2" id="letter" value=""/>
+  </div>
+
+  <table border="1" cellspacing="0" width="100%">
+   <thead>
+    <tr><th width="50%">Keys</th><th>Values</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>LR</td><td id="abg_lr">&nbsp;</td></tr>
+    <tr><td>FB</td><td id="abg_fb">&nbsp;</td></tr>
+    <tr><td>DIR</td><td id="abg_dir">&nbsp;</td></tr>
+   </tbody>
+  </table>
+
+  <div id="result"></div>
+  <div id="debug"></div>
+ </div>
+</div>
+</body>
+</html>
+
+

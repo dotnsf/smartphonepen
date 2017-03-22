@@ -1,0 +1,9 @@
+applications:
+- path: .
+  memory: 256M
+  instances: 1
+  domain: eu-de.mybluemix.net
+  name: spen
+  host: spen
+  disk_quota: 1024M
+
