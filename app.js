@@ -120,6 +120,45 @@ app.get( '/admin', function( req, res ){
   });
 });
 
+app.delete( '/del_image', function( req, res ){
+  var id = req.body.id;
+
+  //. Watson Visual Recognition Collection から削除
+  var params1 = {
+    collection_id: settings.vr_collection_id,
+    image_id: id
+  };
+  vr3.deleteImage( params1, function( err1, res1 ){
+    if( err1 ){
+      err1.image_id = "error-1";
+      res.write( JSON.stringify( err1 ) );
+      res.end();
+    }
+
+    //. Cloudant から削除
+    spendb.get( id, null, function( err2, body2, header2 ){
+      if( err2 ){
+        err2.image_id = "error-2";
+        res.write( JSON.stringify( err2 ) );
+        res.end();
+      }
+
+      var rev = body2._rev;
+      spendb.destroy( id, rev, function( err3, body3, header3 ){
+        if( err3 ){
+          err3.image_id = "error-3";
+          res.write( JSON.stringify( err3 ) );
+          res.end();
+        }
+
+        body3.image_id = id;
+        res.write( JSON.stringify( body3 ) );
+        res.end();
+      });
+    });
+  });
+});
+
 app.listen( appEnv.port );
 console.log( "server stating on " + appEnv.port + " ..." );
 

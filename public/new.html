@@ -57,27 +57,27 @@ function touchEnd( e ){
     var y = abg['fb'];
 
     ctx.fillStyle = "rgb( 0, 255, 0 )";
-    ctx.arc( x + 100, -1 * y + 100, 5, 0, Math.PI * 2, true );
+    ctx.arc( 2 * x + 100, -2 * y + 100, 5, 0, Math.PI * 2, true );
     ctx.fill();
 
     //. 始点をマーク
     ctx.beginPath();
     ctx.strokeStyle = "rgb( 0, 0, 0 )";
-    ctx.moveTo( x + 100 , -1 * y + 100 );
+    ctx.moveTo( 2 * x + 100 , -2 * y + 100 );
 
     //. ２つ目以降のデータ
     for( var i = 1; i < touchData.length; i ++ ){
       var abg = touchData[i];
       x = abg['lr'];
       y = abg['fb'];
-      ctx.lineTo( x + 100 , -1 * y + 100 );
+      ctx.lineTo( 2 * x + 100 , -2 * y + 100 );
     }
     ctx.stroke();
 
     //. 終点をマーク
     ctx.beginPath();
     ctx.fillStyle = "rgb( 255, 0, 0 )";
-    ctx.arc( x + 100, -1 * y + 100, 5, 0, Math.PI * 2, true );
+    ctx.arc( 2 * x + 100, -2 * y + 100, 5, 0, Math.PI * 2, true );
     ctx.fill();
 
     //. Canvas => Image
