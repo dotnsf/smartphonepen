@@ -106,7 +106,8 @@ app.get( '/admin', function( req, res ){
         var image_id = image.image_id;
         var metadata = image.metadata;
         var letter = metadata.letter;
-        var image_url = "//" + settings.cloudant_username + ":" + settings.cloudant_password + "@" + settings.cloudant_username + ".cloudant.com/" + settings.cloudant_db + "/" + image_id + "/image";
+        var image_url = "./getimage?id=" + image_id;
+        //var image_url = "//" + settings.cloudant_username + ":" + settings.cloudant_password + "@" + settings.cloudant_username + ".cloudant.com/" + settings.cloudant_db + "/" + image_id + "/image";
 
         image_ids.push( image_id );
         letters.push( letter );
@@ -116,6 +117,53 @@ app.get( '/admin', function( req, res ){
       var p = ejs.render( list_template, { image_ids: image_ids, letters: letters, image_urls: image_urls } );
       res.write( p );
       res.end();
+    }
+  });
+});
+
+app.get( '/getimage', function( req, res ){
+  var image_id = req.query.id;
+  //var image_url = "//" + settings.cloudant_username + ":" + settings.cloudant_password + "@" + settings.cloudant_username + ".cloudant.com/" + settings.cloudant_db + "/" + image_id + "/image";
+  spendb.attachment.get( image_id, "image", function( err1, body1 ){
+    res.contentType( 'image/png' );
+    res.end( body1, 'binary' );
+  });
+});
+
+app.get( '/check', function( req, res ){
+  var image_id = req.query.id;
+
+  //. Cloudant から画像をダウンロード
+  spendb.attachment.get( image_id, "image", function( err1, body1 ){
+    if( err1 ){
+      err1.image_id = "error-1";
+      res.write( JSON.stringify( err1 ) );
+      res.end();
+    }else{
+      var filename = 'tmp/' + image_id + '.png';
+      fs.writeFileSync( filename, body1 );
+
+      //. ダウンロードした画像で類似画像検索
+      var params2 = {
+        collection_id: settings.vr_collection_id,
+        limit: 10 /*settings.vr_limit*/,
+        image_file: fs.createReadStream( filename )
+      };
+      vr3.findSimilar( params2, function( err2, res2 ){
+        if( err2 ){
+          err2.image_id = "error-2";
+          res.write( JSON.stringify( err2 ) );
+          res.end();
+        }else{
+          var filename = 'tmp/' + res2.image_file;
+          fs.unlink( filename );
+
+          //. １位は自分自身として、２位以降の画像とその確信度を調べる
+          res2.image_id = image_id;
+          res.write( JSON.stringify( res2 ) );
+          res.end();
+        }
+      });
     }
   });
 });

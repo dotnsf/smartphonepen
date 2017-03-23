@@ -6,8 +6,49 @@
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css"/>
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<link href="./colorbox.css" rel="stylesheet"/> 
+<script type="text/javascript" src="./jquery.colorbox-min.js"></script>
 <script type="text/javascript" src="./cvi_busy_lib.js"></script>
 <script>
+function checkImage( id, letter ){
+  $('#check_' + id).html( '&nbsp;' );
+  var obj = getBusyOverlay( 'viewport', { color:'black', opacity:0.5, text:'チェック中', style:'text-decoration:blink;font-weight:bold;font-size:12px;color:white' } );
+  $.ajax({
+    type: "GET",
+    url: "./check?id=" + id,
+    success: function( data ){
+      obj.remove();
+      //console.log( data );
+      var json = JSON.parse( data );
+      var image_id = json.image_id;
+      if( image_id.indexOf( "error-" ) != 0 ){
+        var similar_images = json.similar_images;
+        var check_result = "";
+        for( i = 0; i < similar_images.length; i ++ ){
+          var similar_image = similar_images[i];
+          var s_image_id = similar_image.image_id;
+          var s_letter = similar_image.metadata.letter;
+          if( image_id != s_image_id && letter != s_letter ){
+            var s_score = similar_image.score;
+            var s_image_url = "./getimage?id=" + s_image_id;
+            var s_class = ( s_score >= 0.92 ? 'hot' : ( s_score >= 0.9 ? 'warn' : 'normal' ) );
+            var line = '(<a class="iframe" rel="external" href="' + s_image_url + '">' + s_image_id + '</a>) <span class="' + s_class + '"><b>' + s_letter + '</b> : ' + s_score + '</span><br/>';
+            check_result += line;
+          }
+        }
+
+        $('#check_' + id).html( check_result );
+        $('.iframe').colorbox( { iframe: true, width:"300px", height:"300px" } );
+        $('#checkimagebutton_' + id).remove();
+      }
+    },
+    error: function( jqXHR, textStatus, errorThrown ){
+      obj.remove();
+      console.log( textStatus + " : " + errorThrown );
+    }
+  });
+}
+
 function delImage( id ){
   if( window.confirm( 'ID: ' + id + ' のデータを削除します' ) ){
     var obj = getBusyOverlay( 'viewport', { color:'black', opacity:0.5, text:'削除中', style:'text-decoration:blink;font-weight:bold;font-size:12px;color:white' } );
@@ -33,6 +74,14 @@ function delImage( id ){
   }
 }
 </script>
+<style>
+.hot{
+  color: #cc0000;
+}
+.warn{
+  color: #ffa500;
+}
+</style>
 </head>
 <body>
   <!-- //navi -->
@@ -58,15 +107,19 @@ function delImage( id ){
   <div class="container" style="padding:60px 0;">
     <table class="table table-striped table-bordered">
       <thead>
-        <tr style="background-color: #ffffcc;"><th>ID</th><th>Image</th><th>Letter</th><th>Action</th></tr>
+        <tr style="background-color: #ffffcc;"><th>ID</th><th colspan="2">Image</th><th>Letter</th><th>Action</th></tr>
       </thead>
       <tbody>
 <% for( var i = 0; i < letters.length; i ++ ){ %>
 <tr id="<%= image_ids[i] %>">
  <td><%= image_ids[i] %></td>
  <td><img src="<%= image_urls[i] %>"/></td>
+ <td id="check_<%= image_ids[i] %>">&nbsp;</td>
  <td><%= letters[i] %></td>
- <td><button type="button" class="btn btn-danger" onClick="delImage('<%= image_ids[i] %>');"><i class="glyphicon glyphicon-trash"></i></button></td>
+ <td>
+  <button type="button" id="delimagebutton_<%= image_ids[i] %>" class="btn btn-danger" onClick="delImage('<%= image_ids[i] %>');"><i class="glyphicon glyphicon-trash"></i></button>
+  <button type="button" id="checkimagebutton_<%= image_ids[i] %>" class="btn btn-info" onClick="checkImage('<%= image_ids[i] %>', '<%= letters[i] %>' );"><i class="glyphicon glyphicon-eye-close"></i></button>
+ </td>
 </tr>
 <% } %>
       </tbody>
