@@ -21,7 +21,7 @@ $(function(){
 
   var location = window.location.toString();
   if( location.indexOf( "mybluemix.net" ) > -1 ){
-    $('#chkdiv').css( 'display', 'none' );
+    $('.no_display_on_prod').css( 'display', 'none' );
   }
 });
 
@@ -39,7 +39,6 @@ function touchStart( e ){
 function touchEnd( e ){
   isTouch = false;
 
-  debugText( '' );
   if( touchData && touchData.length > 10 ){
     //. 描画
     $('#result').html( '<canvas id="cv" width="200" height="200" style="display:none;"></canvas><br/><img id="resultimg"/>' );
@@ -127,6 +126,7 @@ function touchEnd( e ){
           var found_letter = metadata.letter;
           var found_score = similar_image.score;
           debugAdd( found_letter + "(" + found_score + ")" );
+          textAdd( found_letter );
         }
       },
       error: function( jqXHR, textStatus, errorThrown ){
@@ -142,15 +142,15 @@ function deviceOrientation( e ){
   if( isTouch ){
     var gamma = e.gamma; //. Left/Right
     var beta = e.beta;   //. Front/Back
-    var alpha = e.alpha; //. Direction
+    //var alpha = e.alpha; //. Direction
 
     var abg = {};
-    abg['dir'] = alpha;
+    //abg['dir'] = alpha;
     abg['fb'] = beta;
     abg['lr'] = gamma;
     $('#abg_lr').html( gamma );
     $('#abg_fb').html( beta );
-    $('#abg_dir').html( alpha );
+    //$('#abg_dir').html( alpha );
 
     touchData.push( abg );
   } 
@@ -164,6 +164,12 @@ function debugAdd( text ){
   var msg = $('#debug').html();
   msg += ( '<br/>' + text );
   $('#debug').html( msg );
+}
+
+function textAdd( text ){
+  var msg = $('#textarea').html();
+  msg += text;
+  $('#textarea').html( msg );
 }
 </script>
 <style type="text/css">
@@ -185,12 +191,17 @@ table{
   width: 100%;
   height: 100%;
 }
+
+textarea{
+  width: 100%;
+  height: 50px;
+}
 </style>
 </head>
 <body>
 <div>
  <div>
-  <div id="chkdiv">
+  <div class="no_display_on_prod">
     <input type="checkbox" id="mlchk"/>学習データ<input type="text" size="2" id="letter" value=""/>
   </div>
 
@@ -201,12 +212,12 @@ table{
    <tbody>
     <tr><td>LR</td><td id="abg_lr">&nbsp;</td></tr>
     <tr><td>FB</td><td id="abg_fb">&nbsp;</td></tr>
-    <tr><td>DIR</td><td id="abg_dir">&nbsp;</td></tr>
    </tbody>
   </table>
 
-  <div id="result"></div>
-  <div id="debug"></div>
+  <div class="no_display_on_prod" id="result"></div>
+  <textarea id="textarea"></textarea>
+  <div class="no_display_on_prod" id="debug"></div>
  </div>
 </div>
 </body>
