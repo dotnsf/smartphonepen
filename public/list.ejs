@@ -53,12 +53,14 @@ function checkImage( id, letter ){
       if( image_id.indexOf( "error-" ) != 0 ){
         var similar_images = json.similar_images;
         var check_result = "";
+        var score_max = 0.0;
         for( i = 0; i < similar_images.length; i ++ ){
           var similar_image = similar_images[i];
           var s_image_id = similar_image.image_id;
           var s_letter = similar_image.metadata.letter;
           if( image_id != s_image_id && letter != s_letter ){
             var s_score = similar_image.score;
+            if( s_score > score_max ){ score_max = s_score; };
             var s_image_url = "./getimage?id=" + s_image_id;
             var s_class = ( s_score >= 0.92 ? 'hot' : ( s_score >= 0.9 ? 'warn' : 'normal' ) );
             var line = '(<a class="iframe" rel="external" href="' + s_image_url + '">' + s_image_id + '</a>) <span class="' + s_class + '"><b>' + s_letter + '</b> : ' + s_score + '</span><br/>';
@@ -68,7 +70,14 @@ function checkImage( id, letter ){
 
         $('#check_' + id).html( check_result );
         $('.iframe').colorbox( { iframe: true, width:"300px", height:"300px" } );
-        $('#checkimagebutton_' + id).remove();
+        if( score_max >= 0.92 ){
+           $('#'+id).removeClass( "info" );
+           $('#'+id).addClass( "danger" );
+        }else if( score_max >= 0.9 ){
+           $('#'+id).removeClass( "info" );
+           $('#'+id).addClass( "warning" );
+        }
+        //$('#checkimagebutton_' + id).remove();
       }
     },
     error: function( jqXHR, textStatus, errorThrown ){
@@ -134,13 +143,13 @@ function delImage( id ){
 
   <!-- //list -->
   <div class="container" style="padding:60px 0;">
-    <table class="table table-striped table-bordered">
+    <table class="table table-bordered">
       <thead>
         <tr style="background-color: #ffffcc;"><th>ID</th><th colspan="2">Image</th><th>Letter</th><th>Action</th></tr>
       </thead>
       <tbody>
 <% for( var i = 0; i < letters.length; i ++ ){ %>
-<tr id="<%= image_ids[i] %>">
+<tr class="info" id="<%= image_ids[i] %>">
  <td><%= image_ids[i] %></td>
  <td><img src="<%= image_urls[i] %>"/></td>
  <td id="check_<%= image_ids[i] %>">&nbsp;</td>
