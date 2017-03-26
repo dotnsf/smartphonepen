@@ -10,14 +10,43 @@
 <script type="text/javascript" src="./jquery.colorbox-min.js"></script>
 <script type="text/javascript" src="./cvi_busy_lib.js"></script>
 <script>
+var letters = [
+  "<%= letters[0] %>"
+<% for( var i = 1; i < letters.length; i ++ ){ %>
+  ,"<%= letters[i] %>"
+<% } %>
+];
+
+var image_ids = [
+  "<%= image_ids[0] %>"
+<% for( var i = 1; i < image_ids.length; i ++ ){ %>
+  ,"<%= image_ids[i] %>"
+<% } %>
+];
+
+var idx = 0;
+function autoCheckImage(){
+  var id = image_ids[idx];
+  var letter = letters[idx];
+  checkImage( id, letter );
+  if( idx + 1 < letters.length ){
+    idx ++;
+    setTimeout( "autoCheckImage()", 1000 );
+  }
+}
+
+$(function(){
+  autoCheckImage();
+});
+
 function checkImage( id, letter ){
   $('#check_' + id).html( '&nbsp;' );
-  var obj = getBusyOverlay( 'viewport', { color:'black', opacity:0.5, text:'チェック中', style:'text-decoration:blink;font-weight:bold;font-size:12px;color:white' } );
+//  var obj = getBusyOverlay( 'viewport', { color:'black', opacity:0.5, text:'チェック中', style:'text-decoration:blink;font-weight:bold;font-size:12px;color:white' } );
   $.ajax({
     type: "GET",
     url: "./check?id=" + id,
     success: function( data ){
-      obj.remove();
+//      obj.remove();
       //console.log( data );
       var json = JSON.parse( data );
       var image_id = json.image_id;
@@ -43,7 +72,7 @@ function checkImage( id, letter ){
       }
     },
     error: function( jqXHR, textStatus, errorThrown ){
-      obj.remove();
+//      obj.remove();
       console.log( textStatus + " : " + errorThrown );
     }
   });
@@ -118,7 +147,9 @@ function delImage( id ){
  <td><%= letters[i] %></td>
  <td>
   <button type="button" id="delimagebutton_<%= image_ids[i] %>" class="btn btn-danger" onClick="delImage('<%= image_ids[i] %>');"><i class="glyphicon glyphicon-trash"></i></button>
+<!--
   <button type="button" id="checkimagebutton_<%= image_ids[i] %>" class="btn btn-info" onClick="checkImage('<%= image_ids[i] %>', '<%= letters[i] %>' );"><i class="glyphicon glyphicon-eye-close"></i></button>
+-->
  </td>
 </tr>
 <% } %>
