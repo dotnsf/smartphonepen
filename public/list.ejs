@@ -10,6 +10,9 @@
 <script type="text/javascript" src="./jquery.colorbox-min.js"></script>
 <script type="text/javascript" src="./cvi_busy_lib.js"></script>
 <script>
+var hot_border = 0.92;
+var warn_border = 0.9;
+
 var letters = [
   "<%= letters[0] %>"
 <% for( var i = 1; i < letters.length; i ++ ){ %>
@@ -62,7 +65,7 @@ function checkImage( id, letter ){
             var s_score = similar_image.score;
             if( s_score > score_max ){ score_max = s_score; };
             var s_image_url = "./getimage?id=" + s_image_id;
-            var s_class = ( s_score >= 0.92 ? 'hot' : ( s_score >= 0.9 ? 'warn' : 'normal' ) );
+            var s_class = ( s_score >= hot_border ? 'hot' : ( s_score >= warn_border ? 'warn' : 'normal' ) );
             var line = '(<a class="iframe" rel="external" href="' + s_image_url + '">' + s_image_id + '</a>) <span class="' + s_class + '"><b>' + s_letter + '</b> : ' + s_score + '</span><br/>';
             check_result += line;
           }
@@ -70,10 +73,10 @@ function checkImage( id, letter ){
 
         $('#check_' + id).html( check_result );
         $('.iframe').colorbox( { iframe: true, width:"300px", height:"300px" } );
-        if( score_max >= 0.92 ){
+        if( score_max >= hot_border ){
            $('#'+id).removeClass( "info" );
            $('#'+id).addClass( "danger" );
-        }else if( score_max >= 0.9 ){
+        }else if( score_max >= warn_border ){
            $('#'+id).removeClass( "info" );
            $('#'+id).addClass( "warning" );
         }

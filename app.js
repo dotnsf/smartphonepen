@@ -107,11 +107,27 @@ app.get( '/admin', function( req, res ){
         var metadata = image.metadata;
         var letter = metadata.letter;
         var image_url = "./getimage?id=" + image_id;
-        //var image_url = "//" + settings.cloudant_username + ":" + settings.cloudant_password + "@" + settings.cloudant_username + ".cloudant.com/" + settings.cloudant_db + "/" + image_id + "/image";
 
         image_ids.push( image_id );
         letters.push( letter );
         image_urls.push( image_url );
+      }
+
+      //. letter でソート 
+      for( i = 0; i < letters.length - 1; i ++ ){
+        for( j = i + 1; j < letters.length; j ++ ){
+          if( letters[i] > letters[j] ){
+            var t = letters[i];
+            letters[i] = letters[j];
+            letters[j] = t;
+            t = image_ids[i];
+            image_ids[i] = image_ids[j];
+            image_ids[j] = t;
+            t = image_urls[i];
+            image_urls[i] = image_urls[j];
+            image_urls[j] = t;
+          }
+        }
       }
 
       var p = ejs.render( list_template, { image_ids: image_ids, letters: letters, image_urls: image_urls } );
