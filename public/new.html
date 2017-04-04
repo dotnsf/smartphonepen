@@ -36,8 +36,15 @@ $(function(){
   //if( location.indexOf( "mybluemix.net" ) > -1 ){
   //  $('.no_display_on_prod').css( 'display', 'none' );
   //}
-  var paramTrain = decodeURIComponent( location.search.match( /trainingmode=(.*?)(&|$)/ )[1] );
-  if( !paramTrain ){
+  var bTraining = false;
+  try{
+    var paramTrain = decodeURIComponent( location.search.match( /trainingmode=(.*?)(&|$)/ )[1] );
+    if( paramTrain ){
+      bTraining = true;
+    }
+  }catch( e ){
+  }
+  if( !bTraining ){
     $('.no_display_on_prod').css( 'display', 'none' );
   }
 
