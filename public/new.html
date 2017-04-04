@@ -31,8 +31,13 @@ $(function(){
     window.addEventListener( "touchend", touchEnd );
   }
 
-  var location = window.location.toString();
-  if( location.indexOf( "mybluemix.net" ) > -1 ){
+  //. 学習用インターフェースを見せるかどうかの識別・判断
+  //var location = window.location.toString();
+  //if( location.indexOf( "mybluemix.net" ) > -1 ){
+  //  $('.no_display_on_prod').css( 'display', 'none' );
+  //}
+  var paramTrain = decodeURIComponent( location.search.match( /trainingmode=(.*?)(&|$)/ )[1] );
+  if( !paramTrain ){
     $('.no_display_on_prod').css( 'display', 'none' );
   }
 
