@@ -4,24 +4,12 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<title>SPen</title>
+<title>SPen Training</title>
 <script type="text/javascript" src="//code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="./mqttws31.js"></script>
 <script type="text/javascript">
-var deviceid = null;
-var devicetype = "MyDevice";
-var eventtype = null;
-var test = null;
-var client;
-var pubTopic = 'iot-2/evt/status/fmt/json';
-var phoneData = {};
-phoneData.d = {};
-
 var isTouch = false;
 var touchData = [];
 $(function(){
-  getDeviceId();
-
   if( window.DeviceOrientationEvent ){
     window.addEventListener( "deviceorientation", deviceOrientation );
   }
@@ -30,29 +18,6 @@ $(function(){
     window.addEventListener( "touchstart", touchStart );
     window.addEventListener( "touchend", touchEnd );
   }
-
-  //. 学習用インターフェースを見せるかどうかの識別・判断
-  //var location = window.location.toString();
-  //if( location.indexOf( "mybluemix.net" ) > -1 ){
-  //  $('.no_display_on_prod').css( 'display', 'none' );
-  //}
-  var bTraining = false;
-  try{
-    var paramTrain = decodeURIComponent( location.search.match( /trainingmode=(.*?)(&|$)/ )[1] );
-    if( paramTrain ){
-      bTraining = true;
-    }
-  }catch( e ){
-  }
-  if( !bTraining ){
-    $('.no_display_on_prod').css( 'display', 'none' );
-  }
-
-
-  var clientID = "d:quickstart:" + devicetype + ":" + deviceid;
-  client = new Messaging.Client("quickstart.messaging.internetofthings.ibmcloud.com", 443, clientID );
-  client.onConnectionLost = onConnectionLost;
-  client.connect({onSuccess: onConnect, onFailure: onConnectFailure, useSSL: true});
 });
 
 function touchStart( e ){
@@ -136,11 +101,9 @@ function touchEnd( e ){
     var formdata = new FormData();
     formdata.append( 'image', blob );
 
-    if( $('#mlchk').prop( 'checked' ) ){
-      var letter = $('#letter').val();
-      if( letter ){
-        formdata.append( 'letter', letter );
-      }
+    var letter = $('#letter').val();
+    if( letter ){
+      formdata.append( 'letter', letter );
     }
 
     $.ajax({
@@ -152,19 +115,6 @@ function touchEnd( e ){
       success: function( data, dataType ){
         if( letter ){
           debugText( data );
-        }else{
-          var json = JSON.parse( data );
-          var similar_images = json.similar_images;
-
-          //. 第一候補だけを対象にする場合、
-          var similar_image = similar_images[0];
-          var metadata = similar_image.metadata;
-          var found_letter = metadata.letter;
-          var found_score = similar_image.score;
-          debugAdd( found_letter + "(" + found_score + ")" );
-          textAdd( found_letter );
-
-          publishMessage( found_letter, found_score );
         }
       },
       error: function( jqXHR, textStatus, errorThrown ){
@@ -203,89 +153,6 @@ function debugAdd( text ){
   msg += ( '<br/>' + text );
   $('#debug').html( msg );
 }
-
-function textAdd( text ){
-  var msg = $('#textarea').html();
-  msg += text;
-  $('#textarea').html( msg );
-}
-
-
-function publishMessage( letter, score ){
-  if( deviceid != null ){
-    var d = {};
-    d['letter'] = letter;
-    d['score'] = score;
-
-    phoneData.d = d;
-    phoneData.publish();
-  }
-}
-
-
-function onConnect() {
-  console.log("Connected");
-}
-function onConnectFailure(error) {
-  console.log("Connect Failed");
-  console.log(error.errorCode);
-  console.log(error.errorMessage);
-}
-function onConnectionLost(response) {
-  console.log("onConnectionLost")
-  if (response.errorCode !== 0) {
-    console.log("onConnectionLost:"+response.errorMessage);
-  }
-  clearInterval(msgInterval);
-  client.connect({onSuccess: onConnect, onFailure: onConnectFailure});
-}
-
-
-phoneData.toJson = function(){
-  return JSON.stringify( this );
-}
-
-phoneData.publish = function(){
-  var message = new Messaging.Message( phoneData.toJson() );
-  message.destinationName = pubTopic;
-  client.send( message );
-}
-
-
-function getDeviceId(){
-  var did = null;
-  cookies = document.cookie.split( "; " );
-  for( i = 0; i < cookies.length; i ++ ){
-    str = cookies[i].split( "=" );
-    if( unescape( str[0] ) == "deviceid" ){
-      did = unescape( unescape( str[1] ) );
-    }
-  }
-  
-  if( did != null ){
-    deviceid = did;
-  }else{
-    deviceid = generateDeviceId();
-    //console.log( "deviceid = " + deviceid );
-  }
-  $('#deviceid').html( deviceid );
-  document.title = deviceid;
-}
-function generateDeviceId(){
-  var did = "";
-  var hx = "0123456789abcdef";
-  for( i = 0; i < 12; i ++ ){
-    var n = Math.floor( Math.random() * 16 );
-    if( n == 16 ){ n = 15; }
-    c = hx.charAt( n );
-    did += c;
-  }
-  
-  var str = "deviceid=" + did;
-  document.cookie = str;
-	
-  return did;
-}
 </script>
 <style type="text/css">
 html{
@@ -293,7 +160,7 @@ html{
 }
 
 body{
-  background-color: #ffffcc;
+  background-color: #ccccff;
   margin: 0;
   height: 100%;
 }
@@ -301,31 +168,14 @@ body{
 table{
   background-color: #ccffcc;
 }
-
-#main{
-  width: 100%;
-  height: 100%;
-}
-
-textarea{
-  width: 100%;
-  height: 50px;
-}
-
-h3{
-  font-weight: bold;
-  color: #0000ff;
-  text-align: center;
-}
 </style>
 </head>
 <body>
 <div>
  <div>
-  <div class="no_display_on_prod">
-    <input type="checkbox" id="mlchk"/>学習データ<input type="text" size="2" id="letter" value=""/>
+  <div>
+    学習データ<input type="text" size="2" id="letter" value=""/>
   </div>
-  <h3 id="deviceid">****************</h3>
 
   <table border="1" cellspacing="0" width="100%">
    <thead>
@@ -338,10 +188,7 @@ h3{
   </table>
 
   <div id="result"></div>
-  <div>
-    <textarea id="textarea"></textarea>
-  </div>
-  <div class="no_display_on_prod" id="debug"></div>
+  <div id="debug"></div>
  </div>
 </div>
 </body>
