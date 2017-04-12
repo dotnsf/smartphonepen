@@ -29,6 +29,9 @@ app.use( express.static( __dirname + '/public' ) );
 app.all( '/admin*', basicAuth( function( user, pass ){
   return( user === settings.basic_username && pass === settings.basic_password );
 }));
+app.all( '/training*', basicAuth( function( user, pass ){
+  return( user === settings.basic_username && pass === settings.basic_password );
+}));
 
 app.post( '/ocr', function( req, res ){
   var imgpath = req.file.path;
@@ -87,6 +90,13 @@ app.post( '/ocr', function( req, res ){
       fs.unlink( imgpath, function( err ){} );
     });
   }
+});
+
+app.get( '/training', function( req, res ){
+  var training_template = fs.readFileSync( __dirname + '/public/training.ejs', 'utf-8' );
+  var p = ejs.render( training_template, {} );
+  res.write( p );
+  res.end();
 });
 
 app.get( '/admin', function( req, res ){
